@@ -10,3 +10,8 @@ http://bkbtl.googlecode.com/svn/trunk/docs/screenshot/QtBkBtl-20100518-mac.png
 BKBTL в отладочном режиме:<br />
 http://bkbtl.googlecode.com/svn/trunk/docs/screenshot/BKBTL-20091116-crop.png
 
+BALLY:<br />
+http://bkbtl.googlecode.com/svn/trunk/docs/screenshot/BKBTL-20100725-Bally.png
+
+Break House:<br />
+http://bkbtl.googlecode.com/svn/trunk/docs/screenshot/BKBTL-20100725-BreakHouse.png
