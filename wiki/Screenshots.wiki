@@ -1,0 +1,12 @@
+#summary Снимки экрана.
+#labels Featured
+
+BKBTL в работе:<br />
+http://bkbtl.googlecode.com/svn/trunk/docs/screenshot/BKBTL-20091209-main.png
+
+QtBkBtl на Mac OS X:<br />
+http://bkbtl.googlecode.com/svn/trunk/docs/screenshot/QtBkBtl-20100518-mac.png
+
+BKBTL в отладочном режиме:<br />
+http://bkbtl.googlecode.com/svn/trunk/docs/screenshot/BKBTL-20091116-crop.png
+
