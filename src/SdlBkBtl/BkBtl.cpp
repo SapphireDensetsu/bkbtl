@@ -10,7 +10,7 @@
 SDL_Surface*    g_Screen = NULL;
 SDL_Surface*    g_BKScreen = NULL;
 int             g_BKScreenWid, g_BKScreenHei;
-ScreenMode      g_ScreenMode = ScreenModeNone;
+int             g_ScreenMode = -1;
 int             g_okQuit = FALSE;
 int             g_LastDelay = 0;        //DEBUG: Last delay value, milliseconds
 int             g_LastFps = 0;          //DEBUG: Last Frames-per-Second value
@@ -46,19 +46,19 @@ void Main_ClearScreen()
     SDL_FillRect(g_Screen, &rc, 0);
 }
 
-void Main_SetScreenMode(ScreenMode screenMode)
+void Main_SetScreenMode(int screenMode)
 {
     if (g_ScreenMode == screenMode)
         return;
 
-    if (g_ScreenMode != ScreenModeNone)
+    if (g_ScreenMode != -1)
     {
         SDL_FreeSurface(g_BKScreen);
     }
 
     g_ScreenMode = screenMode;
 
-    if (screenMode != ScreenModeNone)
+    if (screenMode != -1)
     {
         Emulator_GetScreenModeSize(screenMode, &g_BKScreenWid, &g_BKScreenHei);
         g_BKScreen = SDL_CreateRGBSurface(0, g_BKScreenWid, g_BKScreenHei, 32, 0,0,0,0);
@@ -127,7 +127,7 @@ void Main_OnKeyEvent(SDL_Event evt)
             return;
         case SDLK_BACKSPACE:  // Right shoulder on Dingoo
             Main_ClearScreen();
-            Main_SetScreenMode((g_ScreenMode == ScreenModeLast) ? (ScreenMode)0 : (ScreenMode)(g_ScreenMode + 1));
+            Main_SetScreenMode((g_ScreenMode + 1 == EMULATOR_SCREENMODE_COUNT) ? 0 : g_ScreenMode + 1);
             return;
         default:
             break;
@@ -183,7 +183,7 @@ int main()
         return 255;
 
     Main_ClearScreen();
-    Main_SetScreenMode(ScreenColor256x256);
+    Main_SetScreenMode(0);
 
     Emulator_Start();
 
@@ -263,7 +263,7 @@ int main()
     Emulator_Stop();
     Emulator_Done();
 
-    Main_SetScreenMode(ScreenModeNone);
+    Main_SetScreenMode(-1);
 
     // Free memory
     SDL_FreeSurface(g_Screen);
