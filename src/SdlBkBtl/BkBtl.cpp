@@ -65,6 +65,33 @@ void Main_SetScreenMode(int screenMode)
     }
 }
 
+void Main_DrawScreen()
+{
+    SDL_LockSurface(g_BKScreen);
+    void* pPixels = g_BKScreen->pixels;
+    Emulator_PrepareScreen(pPixels, g_ScreenMode);
+    SDL_UnlockSurface(g_BKScreen);
+    
+    // Draw BK screen
+    SDL_Rect src, dst;
+    src.x = src.y = dst.x = dst.y = 0;
+    src.w = dst.w = SCREEN_WIDTH;
+    src.h = dst.w = SCREEN_HEIGHT;
+    if (g_BKScreenWid < SCREEN_WIDTH)
+    {
+        src.w = dst.w = g_BKScreenWid;
+        dst.x = (SCREEN_WIDTH - g_BKScreenWid) / 2;
+    }
+    if (g_BKScreenHei < SCREEN_HEIGHT)
+    {
+        src.h = dst.h = g_BKScreenHei;
+        dst.y = (SCREEN_HEIGHT - g_BKScreenHei) / 2;
+    }
+    SDL_BlitSurface(g_BKScreen, &src, g_Screen, &dst);
+    
+    SDL_Flip(g_Screen);
+}
+
 int Main_LoadBin(const char* fileName)
 {
     FILE* file = fopen(fileName, "rb");
@@ -101,6 +128,96 @@ int Main_LoadBin(const char* fileName)
     return TRUE;
 }
 
+struct MenuItemStruct
+{
+    const char* text;
+}
+static m_MainMenuItems[] =
+{
+    { "Video Mode <>" },
+    { "Load BIN" },
+    { "Reset" },
+};
+
+void Main_Menu()
+{
+    int exitMenu = FALSE;
+    int currentItem = 0;
+    int redrawScreen = TRUE;
+    const int menuItemCount = sizeof(m_MainMenuItems) / sizeof(MenuItemStruct);
+    const int menuLeft = 12;
+    const int menuWidth = 8 * 14;
+    char progname[50];
+
+    sprintf(progname, " BKBTL SDL version %d.%d  " __DATE__ " ", VERSION_MAJOR, VERSION_MINOR);
+
+    while (!exitMenu)
+    {
+        if (redrawScreen)
+        {
+            Main_DrawScreen();
+
+            // Draw menu background 
+            SDL_Rect rc;
+            rc.x = menuLeft - 8; rc.y = 8 - 4;
+            rc.w = 12 + menuWidth; rc.h = 8 + 12 * 3;
+            SDL_FillRect(g_Screen, &rc, SDL_MapRGB(g_Screen->format, 32, 32, 192));
+            // Draw selected item background
+            rc.x = menuLeft - 4; rc.y = 8 - 1 + currentItem * 12;
+            rc.w = 4 + menuWidth; rc.h = 11 + 2;
+            SDL_FillRect(g_Screen, &rc, SDL_MapRGB(g_Screen->format, 192, 32, 32));
+
+            // Draw menu items
+            int y = 8;
+            for (int i = 0; i < menuItemCount; i++)
+            {
+                Font_DrawText(menuLeft, y + 12 * i, m_MainMenuItems[i].text);
+            }
+
+            // Emulator name and version number
+            Font_DrawText(menuLeft, SCREEN_HEIGHT - 11 * 2, progname);
+
+            SDL_Flip(g_Screen);
+
+            redrawScreen = FALSE;
+        }
+
+        SDL_Event evt;
+        while (SDL_PollEvent(&evt))
+        {
+            redrawScreen = TRUE;
+            if (evt.type == SDL_QUIT)
+            {
+                g_okQuit = exitMenu = TRUE;
+                break;
+            }
+            if (evt.type == SDL_KEYDOWN)
+            {
+                switch (evt.key.keysym.sym)
+                {
+                case SDLK_PAUSE:  // POWER UP button on Dingoo
+                    g_okQuit = exitMenu = TRUE;
+                    break;
+                case SDLK_TAB:  // Left shoulder on Dingoo
+                case SDLK_ESCAPE:  // SELECT button on Dingoo
+                    exitMenu = TRUE;
+                    break;
+                case SDLK_UP:
+                    if (currentItem > 0) currentItem--;
+                    break;
+                case SDLK_DOWN:
+                    if (currentItem < menuItemCount - 1) currentItem++;
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+        SDL_Delay(50);
+    }
+}
+
 void Main_OnKeyEvent(SDL_Event evt)
 {
     if (evt.type == SDL_KEYDOWN)
@@ -112,18 +229,19 @@ void Main_OnKeyEvent(SDL_Event evt)
             g_okQuit = TRUE;
             return;
         case SDLK_TAB:  // Left shoulder on Dingoo
-            Main_LoadBin("GAME.BIN");
-            // Print "S1000"
-            Emulator_KeyboardEvent(0123, TRUE);
-            Emulator_KeyboardEvent(0123, FALSE);
-            Emulator_KeyboardEvent(061, TRUE);
-            Emulator_KeyboardEvent(061, FALSE);
-            Emulator_KeyboardEvent(060, TRUE);
-            Emulator_KeyboardEvent(060, FALSE);
-            Emulator_KeyboardEvent(060, TRUE);
-            Emulator_KeyboardEvent(060, FALSE);
-            Emulator_KeyboardEvent(060, TRUE);
-            Emulator_KeyboardEvent(060, FALSE);
+            //Main_LoadBin("GAME.BIN");
+            //// Print "S1000"
+            //Emulator_KeyboardEvent(0123, TRUE);
+            //Emulator_KeyboardEvent(0123, FALSE);
+            //Emulator_KeyboardEvent(061, TRUE);
+            //Emulator_KeyboardEvent(061, FALSE);
+            //Emulator_KeyboardEvent(060, TRUE);
+            //Emulator_KeyboardEvent(060, FALSE);
+            //Emulator_KeyboardEvent(060, TRUE);
+            //Emulator_KeyboardEvent(060, FALSE);
+            //Emulator_KeyboardEvent(060, TRUE);
+            //Emulator_KeyboardEvent(060, FALSE);
+            Main_Menu();
             return;
         case SDLK_BACKSPACE:  // Right shoulder on Dingoo
             Main_ClearScreen();
@@ -216,31 +334,7 @@ int main()
         {
             Emulator_SystemFrame();
 
-            SDL_LockSurface(g_BKScreen);
-            void* pPixels = g_BKScreen->pixels;
-            Emulator_PrepareScreen(pPixels, g_ScreenMode);
-            SDL_UnlockSurface(g_BKScreen);
-            
-            // Draw BK screen
-            SDL_Rect src, dst;
-            src.x = src.y = dst.x = dst.y = 0;
-            src.w = dst.w = SCREEN_WIDTH;
-            src.h = dst.w = SCREEN_HEIGHT;
-            if (g_BKScreenWid < SCREEN_WIDTH)
-            {
-                src.w = dst.w = g_BKScreenWid;
-                dst.x = (SCREEN_WIDTH - g_BKScreenWid) / 2;
-            }
-            if (g_BKScreenHei < SCREEN_HEIGHT)
-            {
-                src.h = dst.h = g_BKScreenHei;
-                dst.y = (SCREEN_HEIGHT - g_BKScreenHei) / 2;
-            }
-            SDL_BlitSurface(g_BKScreen, &src, g_Screen, &dst);
-
-            //Font_DrawText(10,10, "Hello World!");  //DEBUG
-            
-            SDL_Flip(g_Screen);
+            Main_DrawScreen();
             
             frames++;
         }

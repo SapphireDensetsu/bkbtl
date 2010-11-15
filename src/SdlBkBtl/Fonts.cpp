@@ -15,6 +15,8 @@ SDL_Surface* m_FontSurfaceUknc;
 void Fonts_Initialize()
 {
     m_FontSurfaceUknc = SDL_CreateRGBSurface(0, 8, 224 * 11, 8, 0,0,0,0);
+    SDL_SetColorKey(m_FontSurfaceUknc, SDL_SRCCOLORKEY, 0);
+    //SDL_SetAlpha(m_FontSurfaceUknc, SDL_SRCALPHA, 128);
 
     SDL_Color colors[2];
     colors[0].r = colors[0].g = colors[0].b = 0;
