@@ -194,6 +194,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Fonts.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\emubase\Processor.cpp"
 				>
 			</File>

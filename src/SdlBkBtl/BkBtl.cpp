@@ -177,6 +177,8 @@ int main()
     if (g_Screen == NULL)
         return 254;  // Unable to set video mode
 
+    Fonts_Initialize();
+
     if (!Emulator_Init())
         return 255;
     if (!Emulator_InitConfiguration(DEFAULT_BK_CONF))
@@ -235,6 +237,8 @@ int main()
                 dst.y = (SCREEN_HEIGHT - g_BKScreenHei) / 2;
             }
             SDL_BlitSurface(g_BKScreen, &src, g_Screen, &dst);
+
+            //Font_DrawText(10,10, "Hello World!");  //DEBUG
             
             SDL_Flip(g_Screen);
             
@@ -267,6 +271,8 @@ int main()
 
     // Free memory
     SDL_FreeSurface(g_Screen);
+
+    Fonts_Finalize();
 
     SDL_Quit();
 
