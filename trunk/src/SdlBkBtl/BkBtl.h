@@ -9,3 +9,13 @@
 #define SCREEN_HEIGHT           240
 #define SCREEN_BITPERPIXEL      16
 
+
+//////////////////////////////////////////////////////////////////////
+// Fonts
+
+void Fonts_Initialize();
+void Fonts_Finalize();
+void Font_DrawText(int x, int y, const char *str);
+
+
+//////////////////////////////////////////////////////////////////////
