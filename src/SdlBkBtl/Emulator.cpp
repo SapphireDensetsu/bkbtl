@@ -310,6 +310,14 @@ void Emulator_Stop()
     //m_wEmulatorCPUBreakpoint = 0177777;
 }
 
+void Emulator_Reset()
+{
+    g_pBoard->Reset();
+
+    //m_nUptimeFrameCount = 0;
+    //m_dwEmulatorUptime = 0;
+}
+
 void Emulator_KeyboardEvent(BYTE keyscan, int pressed)
 {
     if (m_EmulatorKeyQueueCount == KEYEVENT_QUEUE_SIZE) return;  // Full queue

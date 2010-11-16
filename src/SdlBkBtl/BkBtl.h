@@ -11,6 +11,17 @@
 
 
 //////////////////////////////////////////////////////////////////////
+// Commands
+
+#define ID_EXIT                 1001
+#define ID_RESET                1002
+#define ID_VIDEO_MODE           1003
+#define ID_VIDEO_MODE_NEXT      1004
+#define ID_VIDEO_MODE_PREV      1005
+#define ID_LOAD_BIN             1006
+
+
+//////////////////////////////////////////////////////////////////////
 // Fonts
 
 void Fonts_Initialize();

@@ -73,14 +73,18 @@ void Main_DrawScreen()
     SDL_UnlockSurface(g_BKScreen);
     
     // Draw BK screen
-    SDL_Rect src, dst;
+    SDL_Rect src, dst, rc;
     src.x = src.y = dst.x = dst.y = 0;
     src.w = dst.w = SCREEN_WIDTH;
     src.h = dst.w = SCREEN_HEIGHT;
     if (g_BKScreenWid < SCREEN_WIDTH)
     {
-        src.w = dst.w = g_BKScreenWid;
-        dst.x = (SCREEN_WIDTH - g_BKScreenWid) / 2;
+        int scrleft = (SCREEN_WIDTH - g_BKScreenWid) / 2;
+        src.w = dst.w = g_BKScreenWid;  dst.x = scrleft;
+        rc.x = rc.y = 0;  rc.w = scrleft;  rc.h = SCREEN_HEIGHT;
+        SDL_FillRect(g_Screen, &rc, 0);
+        rc.x = scrleft + g_BKScreenWid;  rc.y = 0;  rc.w = SCREEN_WIDTH - scrleft - g_BKScreenWid;  rc.h = SCREEN_HEIGHT;
+        SDL_FillRect(g_Screen, &rc, 0);
     }
     if (g_BKScreenHei < SCREEN_HEIGHT)
     {
@@ -128,15 +132,62 @@ int Main_LoadBin(const char* fileName)
     return TRUE;
 }
 
+void Main_ExecuteCommand(int command)
+{
+    switch (command)
+    {
+    case ID_VIDEO_MODE_NEXT:
+        Main_SetScreenMode((g_ScreenMode + 1 == EMULATOR_SCREENMODE_COUNT) ? 0 : g_ScreenMode + 1);
+        break;
+    case ID_VIDEO_MODE_PREV:
+        Main_SetScreenMode((g_ScreenMode == 0) ? EMULATOR_SCREENMODE_COUNT - 1 : g_ScreenMode - 1);
+        break;
+    case ID_RESET:
+        Emulator_Reset();
+        break;
+    case ID_LOAD_BIN:
+        Main_LoadBin("GAME.BIN");
+        // Print "S1000"
+        Emulator_KeyboardEvent(0123, TRUE);
+        Emulator_KeyboardEvent(0123, FALSE);
+        Emulator_KeyboardEvent(061, TRUE);
+        Emulator_KeyboardEvent(061, FALSE);
+        Emulator_KeyboardEvent(060, TRUE);
+        Emulator_KeyboardEvent(060, FALSE);
+        Emulator_KeyboardEvent(060, TRUE);
+        Emulator_KeyboardEvent(060, FALSE);
+        Emulator_KeyboardEvent(060, TRUE);
+        Emulator_KeyboardEvent(060, FALSE);
+        break;
+    default:
+        break;
+    }
+}
+
+// Returns: TRUE - close menu, FALSE - do not close menu
+int Main_ExecuteMenuCommand(int command, int rightleft)
+{
+    switch (command)
+    {
+    case ID_VIDEO_MODE:
+        Main_ExecuteCommand(rightleft ? ID_VIDEO_MODE_NEXT : ID_VIDEO_MODE_PREV);
+        return FALSE;
+    default:
+        Main_ExecuteCommand(command);
+        return TRUE;
+    }
+}
+
 struct MenuItemStruct
 {
     const char* text;
+    int         command;
 }
 static m_MainMenuItems[] =
 {
-    { "Video Mode <>" },
-    { "Load BIN" },
-    { "Reset" },
+    { "Video Mode <>",  ID_VIDEO_MODE },
+    { "Load BIN",       ID_LOAD_BIN },
+    { "Reset",          ID_RESET },
 };
 
 void Main_Menu()
@@ -203,10 +254,23 @@ void Main_Menu()
                     exitMenu = TRUE;
                     break;
                 case SDLK_UP:
-                    if (currentItem > 0) currentItem--;
+                    if (currentItem > 0) currentItem--; else currentItem = menuItemCount - 1;
                     break;
                 case SDLK_DOWN:
-                    if (currentItem < menuItemCount - 1) currentItem++;
+                    if (currentItem < menuItemCount - 1) currentItem++; else currentItem = 0;
+                    break;
+                case SDLK_RIGHT:
+                case SDLK_LCTRL:  // A button on Dingoo
+                case SDLK_SPACE:  // X button on Dingoo
+                    if (Main_ExecuteMenuCommand(m_MainMenuItems[currentItem].command, TRUE))
+                        exitMenu = TRUE;
+                    break;
+                case SDLK_LEFT:
+                case SDLK_LALT:  // B button on Dingoo
+                case SDLK_LSHIFT:  // Y button on Dingoo
+                case SDLK_RETURN:  // START button on Dingoo
+                    if (Main_ExecuteMenuCommand(m_MainMenuItems[currentItem].command, FALSE))
+                        exitMenu = TRUE;
                     break;
                 default:
                     break;
@@ -229,18 +293,6 @@ void Main_OnKeyEvent(SDL_Event evt)
             g_okQuit = TRUE;
             return;
         case SDLK_TAB:  // Left shoulder on Dingoo
-            //Main_LoadBin("GAME.BIN");
-            //// Print "S1000"
-            //Emulator_KeyboardEvent(0123, TRUE);
-            //Emulator_KeyboardEvent(0123, FALSE);
-            //Emulator_KeyboardEvent(061, TRUE);
-            //Emulator_KeyboardEvent(061, FALSE);
-            //Emulator_KeyboardEvent(060, TRUE);
-            //Emulator_KeyboardEvent(060, FALSE);
-            //Emulator_KeyboardEvent(060, TRUE);
-            //Emulator_KeyboardEvent(060, FALSE);
-            //Emulator_KeyboardEvent(060, TRUE);
-            //Emulator_KeyboardEvent(060, FALSE);
             Main_Menu();
             return;
         case SDLK_BACKSPACE:  // Right shoulder on Dingoo
