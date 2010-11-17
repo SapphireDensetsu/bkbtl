@@ -33,7 +33,7 @@ typedef char TCHAR;
 
 #ifdef __GNUG__
 #define _stat       stat
-#define _stricmp    strcasecmp
+//#define _stricmp    strcasecmp
 #define _snprintf   snprintf
 #endif
 
@@ -106,13 +106,19 @@ const LPCTSTR REGISTER_NAME[] = { _T("R0"), _T("R1"), _T("R2"), _T("R3"), _T("R4
 const int BK_SCREEN_WIDTH = 512;
 const int BK_SCREEN_HEIGHT = 256;
 
-//QFont Common_GetMonospacedFont();
 void Common_Cleanup();
 void PrintOctalValue(TCHAR* buffer, WORD value);
 void PrintBinaryValue(TCHAR* buffer, WORD value);
 //void DrawOctalValue(QPainter &painter, int x, int y, WORD value);
 //void DrawBinaryValue(QPainter &painter, int x, int y, WORD value);
 BOOL ParseOctalValue(LPCTSTR text, WORD* pValue);
+
+
+//////////////////////////////////////////////////////////////////////
+// Directory browsing
+
+char ** Common_FindFiles(const char* directory, const char* filemask);
+void Common_FindFiles_Cleanup(char ** parray);
 
 
 //////////////////////////////////////////////////////////////////////

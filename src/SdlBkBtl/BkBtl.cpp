@@ -7,6 +7,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // Globals
 
+char            g_AppDirectory[256];
 SDL_Surface*    g_Screen = NULL;
 SDL_Surface*    g_BKScreen = NULL;
 int             g_BKScreenWid, g_BKScreenHei;
@@ -132,6 +133,111 @@ int Main_LoadBin(const char* fileName)
     return TRUE;
 }
 
+// Show directory browser for *.BIN mask
+void Main_BrowseAndLoadBin()
+{
+    // Get file list by mask
+    char ** pfilenames = Common_FindFiles(g_AppDirectory, "*.bin");
+
+    int exitBrowser = FALSE;
+    int currentItem = 0;
+    int redrawScreen = TRUE;
+    int menuItemCount = 0;
+    const int menuLeft = 12;
+    const int menuWidth = 8 * 32;
+    const int menuHeight = 11 * 20;
+
+    while (!exitBrowser)
+    {
+        if (redrawScreen)
+        {
+            Main_DrawScreen();
+
+            // Draw menu background 
+            SDL_Rect rc;
+            rc.x = menuLeft - 8; rc.y = 8 - 4;
+            rc.w = 12 + menuWidth; rc.h = 8 + menuHeight;
+            SDL_FillRect(g_Screen, &rc, SDL_MapRGB(g_Screen->format, 32, 32, 192));
+            // Draw selected item background
+            rc.x = menuLeft - 4; rc.y = 8 - 1 + currentItem * 11;
+            rc.w = 4 + menuWidth; rc.h = 11 + 2;
+            SDL_FillRect(g_Screen, &rc, SDL_MapRGB(g_Screen->format, 192, 32, 32));
+
+            // Draw menu items
+            char ** pitem = pfilenames;
+            int y = 8;
+            menuItemCount = 0;
+            while (*pitem != NULL)
+            {
+                Font_DrawText(menuLeft, y, *pitem);
+                pitem++;
+                y += 11;
+                menuItemCount++;
+            }
+
+            SDL_Flip(g_Screen);
+
+            redrawScreen = FALSE;
+        }
+
+        SDL_Event evt;
+        while (SDL_PollEvent(&evt))
+        {
+            redrawScreen = TRUE;
+            if (evt.type == SDL_QUIT)
+            {
+                g_okQuit = exitBrowser = TRUE;
+                break;
+            }
+            if (evt.type == SDL_KEYDOWN)
+            {
+                switch (evt.key.keysym.sym)
+                {
+                case SDLK_PAUSE:  // POWER UP button on Dingoo
+                    g_okQuit = exitBrowser = TRUE;
+                    break;
+                case SDLK_TAB:  // Left shoulder on Dingoo
+                case SDLK_ESCAPE:  // SELECT button on Dingoo
+                    exitBrowser = TRUE;
+                    break;
+                case SDLK_UP:
+                    if (currentItem > 0) currentItem--; else currentItem = menuItemCount - 1;
+                    break;
+                case SDLK_DOWN:
+                    if (currentItem < menuItemCount - 1) currentItem++; else currentItem = 0;
+                    break;
+                case SDLK_LCTRL:  // A button on Dingoo
+                case SDLK_SPACE:  // X button on Dingoo
+                case SDLK_RETURN:  // START button on Dingoo
+                    {
+                        char * filename = pfilenames[currentItem];
+                        Main_LoadBin(filename);
+                        // Print "S1000"
+                        Emulator_KeyboardEvent(0123, TRUE);
+                        Emulator_KeyboardEvent(0123, FALSE);
+                        Emulator_KeyboardEvent(061, TRUE);
+                        Emulator_KeyboardEvent(061, FALSE);
+                        Emulator_KeyboardEvent(060, TRUE);
+                        Emulator_KeyboardEvent(060, FALSE);
+                        Emulator_KeyboardEvent(060, TRUE);
+                        Emulator_KeyboardEvent(060, FALSE);
+                        Emulator_KeyboardEvent(060, TRUE);
+                        Emulator_KeyboardEvent(060, FALSE);
+                        exitBrowser = TRUE;
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+        SDL_Delay(50);
+    }
+
+    Common_FindFiles_Cleanup(pfilenames);
+}
+
 void Main_ExecuteCommand(int command)
 {
     switch (command)
@@ -146,18 +252,7 @@ void Main_ExecuteCommand(int command)
         Emulator_Reset();
         break;
     case ID_LOAD_BIN:
-        Main_LoadBin("GAME.BIN");
-        // Print "S1000"
-        Emulator_KeyboardEvent(0123, TRUE);
-        Emulator_KeyboardEvent(0123, FALSE);
-        Emulator_KeyboardEvent(061, TRUE);
-        Emulator_KeyboardEvent(061, FALSE);
-        Emulator_KeyboardEvent(060, TRUE);
-        Emulator_KeyboardEvent(060, FALSE);
-        Emulator_KeyboardEvent(060, TRUE);
-        Emulator_KeyboardEvent(060, FALSE);
-        Emulator_KeyboardEvent(060, TRUE);
-        Emulator_KeyboardEvent(060, FALSE);
+        Main_BrowseAndLoadBin();
         break;
     default:
         break;
@@ -325,8 +420,17 @@ void Main_OnKeyEvent(SDL_Event evt)
 #undef main  //HACK for VC error LNK1561: entry point must be defined
 #endif
 
-int main()
+int main(int argc, char** argv)
 {
+    const char *inPath = argv[0];
+	int i, j;
+	for (i = 0, j = 0; inPath[i] != '\0'; i++) {
+		if ((inPath[i] == '\\') || (inPath[i] == '/'))
+			j = i + 1;
+	}
+	strncpy(g_AppDirectory, inPath, j);
+	g_AppDirectory[j] = '\0';
+
 #ifndef _WIN32
     SDL_putenv("DINGOO_IGNORE_OS_EVENTS=1");  //HACK to fix "push long time on X" problem
 #endif
