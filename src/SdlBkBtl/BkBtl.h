@@ -19,13 +19,17 @@
 #define ID_VIDEO_MODE_NEXT      1004
 #define ID_VIDEO_MODE_PREV      1005
 #define ID_LOAD_BIN             1006
+#define ID_KEYBOARD             1007
 
 
 //////////////////////////////////////////////////////////////////////
 // Fonts
 
+struct SDL_Surface;
+
 void Fonts_Initialize();
 void Fonts_Finalize();
+void Font_DrawText(int x, int y, const char *str, SDL_Surface* surface);
 void Font_DrawText(int x, int y, const char *str);
 
 

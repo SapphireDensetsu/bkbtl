@@ -10,14 +10,22 @@
 char            g_AppDirectory[256];
 SDL_Surface*    g_Screen = NULL;
 SDL_Surface*    g_BKScreen = NULL;
+SDL_Surface*    g_Keyboard = NULL;
 int             g_BKScreenWid, g_BKScreenHei;
 int             g_ScreenMode = -1;
 int             g_okQuit = FALSE;
+int             g_okKeyboard = FALSE;   // Onscreen keyboard on/off
+int             g_KeyboardCurrent = 53; // Current onscreen keyboard key, default is Enter
 int             g_LastDelay = 0;        //DEBUG: Last delay value, milliseconds
 int             g_LastFps = 0;          //DEBUG: Last Frames-per-Second value
 
 #define FRAME_TICKS             40      // 1000 us / 40 = 25 frames per second
 #define DEFAULT_BK_CONF         BK_CONF_BK0010_FDD
+
+#define KEYBOARD_LEFT           22
+#define KEYBOARD_TOP            120
+#define KEYBOARD_WIDTH          276
+#define KEYBOARD_HEIGHT         106
 
 struct KeyMappingStruct
 {
@@ -36,6 +44,202 @@ static KeyMappingStruct g_KeyMapping[] = {
     { SDLK_SPACE,   0,  040 },      // X button on Dingoo
 };
 
+// Keyboard key mapping to bitmap
+struct VirtKeyboardKey
+{
+    int             x, y;
+    int             w, h;
+    unsigned int    code;
+    char *          label;
+}
+static m_arrKeyboardKeys[] = {
+/*   x1,y1    w,h      code  AR2code  */
+      3,  4, 54,34,    BK_KEY_REPEAT,   "PVT",      // œŒ¬“
+     56,  4, 52,34,    0003,            "KT",       //  “
+    109,  4, 54,34,    0231,            "=>|",      // Arrow right    =|=>|
+    162,  4, 52,34,    0026,            "|<=",      // Arrow left     |<===
+    215,  4, 54,34,    0027,            "|=>",      // Arrow right    |===>
+    268,  4, 52,34,    0202,            "ISU",      // »Õƒ —”
+    321,  4, 54,34,    0204,            "BR",       // ¡ÀŒ  –≈ƒ
+    374,  4, 52,34,    0220,            "SH",       // STEP
+    426,  4, 52,34,    0014,            "SBR",      // —¡–
+    478,  4, 70,34,    BK_KEY_STOP,     "STOP",     // STOP
+
+      3,38,  36,34,    BK_KEY_BACKSHIFT,"",         // Big Arrow Down
+     38,38,  36,34,    0073,            ";",        // ; +
+     74,38,  34,34,    0061,            "1",        // 1 !
+    109,38,  36,34,    0062,            "2",        // 2 "
+    144,38,  34,34,    0063,            "3",        // 3 #
+    179,38,  36,34,    0064,            "4",        // 4 $
+    214,38,  36,34,    0065,            "5",        // 5 %
+    250,38,  34,34,    0066,            "6",        // 6 &
+    285,38,  36,34,    0067,            "7",        // 7 '
+    320,38,  34,34,    0070,            "8",        // 8 (
+    355,38,  36,34,    0071,            "9",        // 9 )
+    391,38,  36,34,    0060,            "0",        // 0 {
+    426,38,  34,34,    0055,            "-",        // - =
+    461,38,  36,34,    0057,            "/",        // / ?
+    496,38,  52,34,    0030,            "<=",       // Backspace
+
+      3,72,  52,34,    0015,            "Tab",      // TAB
+     55,72,  36,34,    0112,            "J",        // … J
+     91,72,  36,34,    0103,            "C",        // ÷ C
+    126,72,  36,34,    0125,            "U",        // ” U
+    162,72,  34,34,    0113,            "K",        //   K
+    197,72,  36,34,    0105,            "E",        // ≈ E
+    232,72,  34,34,    0116,            "N",        // Õ N
+    267,72,  36,34,    0107,            "G",        // √ G
+    302,72,  36,34,    0133,            "[",        // ÿ [
+    338,72,  34,34,    0135,            "]",        // Ÿ ]
+    373,72,  36,34,    0132,            "Z",        // « Z
+    408,72,  34,34,    0110,            "H",        // ’ H
+    443,72,  36,34,    0072,            ":",        // : *
+    479,72,  36,34,    0137,            "}",        // ⁄ }
+    514,72,  34,34,    0023,            "VS",       // ¬—
+
+     12,106, 52,34,    0000,            "SU",       // —”
+     64,106, 36,34,    0106,            "F",        // ‘ F
+    100,106, 36,34,    0131,            "Y",        // € Y
+    136,106, 36,34,    0127,            "W",        // ¬ W
+    172,106, 34,34,    0101,            "A",        // ¿ A
+    206,106, 36,34,    0120,            "P",        // œ P
+    242,106, 34,34,    0122,            "R",        // – R
+    276,106, 36,34,    0117,            "O",        // Œ O
+    312,106, 34,34,    0114,            "L",        // À L
+    346,106, 34,34,    0104,            "D",        // ƒ D
+    381,106, 36,34,    0126,            "V",        // ∆ V
+    416,106, 36,34,    0134,            "\\",       // › Backslash
+    452,106, 34,34,    0076,            ".",        // . >
+    486,106, 52,34,    0012,            "",         // ENTER
+
+     12,140, 36,34,    BK_KEY_LOWER,    "ST",       // —“–
+     48,140, 34,34,    BK_KEY_UPPER,    "ZA",       // «¿√À
+     82,140, 36,34,    0121,            "Q",        // ﬂ Q
+    118,140, 34,34,    0136,            "^",        // ◊ ^
+    152,140, 36,34,    0123,            "S",        // — S
+    188,140, 34,34,    0115,            "M",        // Ã M
+    222,140, 36,34,    0111,            "I",        // » I
+    258,140, 34,34,    0124,            "T",        // “ T
+    292,140, 36,34,    0130,            "X",        // ‹ X
+    328,140, 34,34,    0102,            "B",        // ¡ B
+    363,140, 36,34,    0100,            "@",        // ﬁ @
+    399,140, 36,34,    0074,            ",",        // , <
+
+     12,174, 52,34,    0016,            "Rus",      // RUS
+     64,174, 36,34,    BK_KEY_AR2,      "AR",       // AR2
+    100,174,283,34,    0040,            "",         // Space bar
+    382,174, 52,34,    0017,            "Lat",      // LAT
+
+    434,140, 34,69,    0010,            NULL,       // Left
+    468,140, 36,34,    0032,            NULL,       // Up
+    468,174, 36,34,    0033,            NULL,       // Down
+    504,140, 34,69,    0031,            NULL,       // Right
+};
+const int m_nKeyboardKeysCount = sizeof(m_arrKeyboardKeys) / sizeof(VirtKeyboardKey);
+
+void Main_PrepareKeyboard()
+{
+    SDL_Rect rc;
+    rc.x = rc.y = 0;  rc.w = KEYBOARD_WIDTH;  rc.h = KEYBOARD_HEIGHT;
+    SDL_FillRect(g_Keyboard, &rc, SDL_MapRGB(g_Keyboard->format, 0,0,0));
+
+    Uint32 colorbk = SDL_MapRGB(g_Keyboard->format, 64, 120, 64);
+    for (int i = 0; i < m_nKeyboardKeysCount; i++)
+    {
+        int x = m_arrKeyboardKeys[i].x / 2;
+        int y = m_arrKeyboardKeys[i].y / 2;
+        int w = m_arrKeyboardKeys[i].w / 2;
+        int h = m_arrKeyboardKeys[i].h / 2;
+        rc.x = x + 1;  rc.y = y + 1;  rc.w = w - 2;  rc.h = h - 2;
+        SDL_FillRect(g_Keyboard, &rc, colorbk);
+    }
+    for (int i = 0; i < m_nKeyboardKeysCount; i++)
+    {
+        int x = m_arrKeyboardKeys[i].x / 2;
+        int y = m_arrKeyboardKeys[i].y / 2;
+        int w = m_arrKeyboardKeys[i].w / 2;
+        int h = m_arrKeyboardKeys[i].h / 2;
+
+        if (m_arrKeyboardKeys[i].label != NULL && (*m_arrKeyboardKeys[i].label) != 0)
+        {
+            int len = strlen(m_arrKeyboardKeys[i].label) * 8;
+            Font_DrawText(x + w/2 - len/2, y + 4, m_arrKeyboardKeys[i].label, g_Keyboard);
+        }
+    }
+}
+
+void Main_DrawKeyboard()
+{
+    // Draw the keyboard on the screen
+    SDL_Rect src, dst;
+    dst.x = KEYBOARD_LEFT;  dst.y = KEYBOARD_TOP;  dst.w = KEYBOARD_WIDTH;  dst.h = KEYBOARD_HEIGHT;
+    src.x = 0;  src.y = 0;  src.w = KEYBOARD_WIDTH;  src.h = KEYBOARD_HEIGHT;
+    SDL_BlitSurface(g_Keyboard, &src, g_Screen, &dst);
+
+    // Draw frame around the current key
+    int x = m_arrKeyboardKeys[g_KeyboardCurrent].x / 2 + KEYBOARD_LEFT;
+    int y = m_arrKeyboardKeys[g_KeyboardCurrent].y / 2 + KEYBOARD_TOP;
+    int w = m_arrKeyboardKeys[g_KeyboardCurrent].w / 2;
+    int h = m_arrKeyboardKeys[g_KeyboardCurrent].h / 2;
+    Uint32 color = SDL_MapRGB(g_Keyboard->format, 255,192,192);
+    SDL_Rect rc;
+    rc.x = x;  rc.y = y - 1;  rc.w = w;  rc.h = 2;
+    SDL_FillRect(g_Screen, &rc, color);
+    rc.x = x;  rc.y = y - 1;  rc.w = 2;  rc.h = h + 2;
+    SDL_FillRect(g_Screen, &rc, color);
+    rc.x = x;  rc.y = y + h - 1;  rc.w = w;  rc.h = 2;
+    SDL_FillRect(g_Screen, &rc, color);
+    rc.x = x + w - 1;  rc.y = y - 1;  rc.w = 2;  rc.h = h + 2;
+    SDL_FillRect(g_Screen, &rc, color);
+}
+
+int Main_KeyboardFindNearestKeyXY(int x, int y)
+{
+    int minidx = g_KeyboardCurrent;
+    int mindist = 0x7fffff;
+    for (int i = 0; i < m_nKeyboardKeysCount; i++)
+    {
+        int left = m_arrKeyboardKeys[i].x / 2;
+        int top = m_arrKeyboardKeys[i].y / 2;
+        int right = left + m_arrKeyboardKeys[i].w / 2;
+        int bottom = top + m_arrKeyboardKeys[i].h / 2;
+
+        if (x > left && x < right && y > top && y < bottom)
+            return i;
+
+        int cx = (left + right) / 2;
+        int cy = (top + bottom) / 2;
+
+        int dist = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+        if (dist < mindist)
+        {
+            minidx = i;
+            mindist = dist;
+        }
+    }
+
+    return minidx;
+}
+
+int Main_KeyboardFindNearestKey(int direction)
+{
+    int left = m_arrKeyboardKeys[g_KeyboardCurrent].x / 2;
+    int top = m_arrKeyboardKeys[g_KeyboardCurrent].y / 2;
+    int right = left + m_arrKeyboardKeys[g_KeyboardCurrent].w / 2;
+    int bottom = top + m_arrKeyboardKeys[g_KeyboardCurrent].h / 2;
+
+    int x, y;
+    switch (direction)
+    {
+    case SDLK_LEFT:   x = left - 36/4;         y = (top + bottom) / 2;  break;
+    case SDLK_RIGHT:  x = right + 36/4;        y = (top + bottom) / 2;  break;
+    case SDLK_UP:     x = (left + right) / 2;  y = top - 34/4;          break;
+    case SDLK_DOWN:   x = (left + right) / 2;  y = bottom + 34/4;       break;
+    default: return g_KeyboardCurrent;
+    }
+
+    return Main_KeyboardFindNearestKeyXY(x, y);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -94,6 +298,9 @@ void Main_DrawScreen()
     }
     SDL_BlitSurface(g_BKScreen, &src, g_Screen, &dst);
     
+    if (g_okKeyboard)
+        Main_DrawKeyboard();
+
     SDL_Flip(g_Screen);
 }
 
@@ -254,6 +461,9 @@ void Main_ExecuteCommand(int command)
     case ID_LOAD_BIN:
         Main_BrowseAndLoadBin();
         break;
+    case ID_KEYBOARD:
+        g_okKeyboard = !g_okKeyboard;
+        break;
     default:
         break;
     }
@@ -281,7 +491,8 @@ struct MenuItemStruct
 static m_MainMenuItems[] =
 {
     { "Video Mode <>",  ID_VIDEO_MODE },
-    { "Load BIN",       ID_LOAD_BIN },
+    { "Keyboard",       ID_KEYBOARD },
+    { "Load BIN    >",  ID_LOAD_BIN },
     { "Reset",          ID_RESET },
 };
 
@@ -306,7 +517,7 @@ void Main_Menu()
             // Draw menu background 
             SDL_Rect rc;
             rc.x = menuLeft - 8; rc.y = 8 - 4;
-            rc.w = 12 + menuWidth; rc.h = 8 + 12 * 3;
+            rc.w = 12 + menuWidth; rc.h = 8 + 12 * menuItemCount;
             SDL_FillRect(g_Screen, &rc, SDL_MapRGB(g_Screen->format, 32, 32, 192));
             // Draw selected item background
             rc.x = menuLeft - 4; rc.y = 8 - 1 + currentItem * 12;
@@ -321,7 +532,7 @@ void Main_Menu()
             }
 
             // Emulator name and version number
-            Font_DrawText(menuLeft, SCREEN_HEIGHT - 11 * 2, progname);
+            Font_DrawText(menuLeft, SCREEN_HEIGHT - 12, progname);
 
             SDL_Flip(g_Screen);
 
@@ -379,20 +590,60 @@ void Main_Menu()
 
 void Main_OnKeyEvent(SDL_Event evt)
 {
+    if (evt.type == SDL_KEYDOWN &&
+        (evt.key.keysym.sym == SDLK_PAUSE || evt.key.keysym.sym == SDLK_ESCAPE))  // POWER UP and SELECt on Dingoo
+    {
+        g_okQuit = TRUE;
+        return;
+    }
+
+    if (g_okKeyboard)  // Onscreen keyboard mode
+    {
+        if (evt.type == SDL_KEYDOWN)
+        {
+            switch (evt.key.keysym.sym)
+            {
+                case SDLK_BACKSPACE:  // Right shoulder on Dingoo
+                    Main_ExecuteCommand(ID_KEYBOARD);
+                    return;
+                case SDLK_UP:
+                case SDLK_DOWN:
+                case SDLK_LEFT:
+                case SDLK_RIGHT:
+                    g_KeyboardCurrent = Main_KeyboardFindNearestKey(evt.key.keysym.sym);
+                    return;
+                case SDLK_LCTRL:
+                case SDLK_SPACE:
+                    Emulator_KeyboardEvent(m_arrKeyboardKeys[g_KeyboardCurrent].code, TRUE);
+                    break;
+                default:
+                    break;
+            }
+        }
+        else if (evt.type == SDL_KEYUP)
+        {
+            switch (evt.key.keysym.sym)
+            {
+                case SDLK_LCTRL:
+                case SDLK_SPACE:
+                    Emulator_KeyboardEvent(m_arrKeyboardKeys[g_KeyboardCurrent].code, FALSE);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return;
+    }
+
     if (evt.type == SDL_KEYDOWN)
     {
         switch (evt.key.keysym.sym)
         {
-        case SDLK_PAUSE:  // POWER UP button on Dingoo
-        case SDLK_ESCAPE:  // SELECT button on Dingoo
-            g_okQuit = TRUE;
-            return;
         case SDLK_TAB:  // Left shoulder on Dingoo
             Main_Menu();
             return;
         case SDLK_BACKSPACE:  // Right shoulder on Dingoo
-            Main_ClearScreen();
-            Main_SetScreenMode((g_ScreenMode + 1 == EMULATOR_SCREENMODE_COUNT) ? 0 : g_ScreenMode + 1);
+            Main_ExecuteCommand(ID_KEYBOARD);
             return;
         default:
             break;
@@ -450,8 +701,12 @@ int main(int argc, char** argv)
     g_Screen = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BITPERPIXEL, 0);
     if (g_Screen == NULL)
         return 254;  // Unable to set video mode
+    g_Keyboard = SDL_CreateRGBSurface(0, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, 32, 0,0,0,0);
+    SDL_SetAlpha(g_Keyboard, SDL_SRCALPHA, 180);
+    SDL_SetColorKey(g_Keyboard, SDL_SRCCOLORKEY, SDL_MapRGB(g_Keyboard->format, 0,0,0));
 
     Fonts_Initialize();
+    Main_PrepareKeyboard();
 
     if (!Emulator_Init())
         return 255;
@@ -520,6 +775,7 @@ int main(int argc, char** argv)
     Main_SetScreenMode(-1);
 
     // Free memory
+    SDL_FreeSurface(g_Keyboard);
     SDL_FreeSurface(g_Screen);
 
     Fonts_Finalize();

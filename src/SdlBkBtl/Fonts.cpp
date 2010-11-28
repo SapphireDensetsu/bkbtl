@@ -49,7 +49,7 @@ void Fonts_Finalize()
 }
 
 
-void Font_DrawText(SDL_Surface* fontSurface, int x, int y, int charw, int charh, const char *str)
+void Font_DrawText(SDL_Surface* fontSurface, int x, int y, int charw, int charh, const char *str, SDL_Surface* surface)
 {
     int charline;
     char ch;
@@ -69,7 +69,7 @@ void Font_DrawText(SDL_Surface* fontSurface, int x, int y, int charw, int charh,
             src.w = charw;  src.h = charh;
             dest.x = x;  dest.y = y;
             dest.w = charw;  dest.h = charh;
-            SDL_BlitSurface(fontSurface, &src, SDL_GetVideoSurface(), &dest);
+            SDL_BlitSurface(fontSurface, &src, surface, &dest);
         }
         x += charw;
         if (x >= SCREEN_WIDTH) break;
@@ -77,9 +77,13 @@ void Font_DrawText(SDL_Surface* fontSurface, int x, int y, int charw, int charh,
         str++;
     }
 }
+void Font_DrawText(int x, int y, const char *str, SDL_Surface* surface)
+{
+    Font_DrawText(m_FontSurfaceUknc, x, y, 8, 11, str, surface);
+}
 void Font_DrawText(int x, int y, const char *str)
 {
-    Font_DrawText(m_FontSurfaceUknc, x, y, 8, 11, str);
+    Font_DrawText(m_FontSurfaceUknc, x, y, 8, 11, str, SDL_GetVideoSurface());
 }
 
 
