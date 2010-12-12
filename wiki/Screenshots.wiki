@@ -15,3 +15,6 @@ http://bkbtl.googlecode.com/svn/trunk/docs/screenshot/BKBTL-20100725-Bally.png
 
 Break House:<br />
 http://bkbtl.googlecode.com/svn/trunk/docs/screenshot/BKBTL-20100725-BreakHouse.png
+
+Prince of Persia:<br />
+http://bkbtl.googlecode.com/svn/trunk/docs/screenshot/BKBTL-20101212-Princepersii.png
