@@ -1,0 +1,35 @@
+#summary Links to other resources.
+#labels Featured
+
+== Документация по БК ==
+
+  * http://www.asvcorp.ru/darch/electronics/1801vm1/opcodes.html -- команды процессора 1801ВМ1
+  * [http://www.emuverse.ru/wiki/БК БК на Emuverse]
+  * [http://bk0010.narod.ru/docs.html Страницы БК-0010] -- журналы, сборники программ, утилита bkread
+  * [http://pdp-11.ru/mybk/textbk/FL11M.TXT ОПИСАНИЕ БК-11М] [http://pdp-11.ru/mybk/doc/opisanie_registrov_BK_11M_1993.htm ОПИСАНИЕ БК-11М]
+  * [http://forum.maxiol.com/index.php?showforum=68 MAXIOL -> PDP-11]
+  * [http://vak.ru/doku.php/?idx=proj:bk Раздел БК на vak.ru] -- [http://vak.ru/doku.php/proj/bk/bk-up Интерфейс УП] -- [http://vak.ru/doku.php/proj/bk/bk1prog]
+  * [http://groups.google.com/group/bk0010/web/schematics Схемы БК в Google Group bk0010]
+  * [http://pdp-11.ru/xsuseless_narod_ru/Docs/bk0010_manual.htm БК0010 Руководство пользователя]
+  * [http://bk0010.narod.ru/bkgra/ "ЭЛЕКТРОНИКА БК-0010" И РАБОТА С ГРАФО-ТЕКСТОВОЙ ИНФОРМАЦИЕЙ]
+  * [http://mailcom.com/bk0010/BK-0011M.html БК-0011М. РУКОВОДСТВО СИСТЕМНОГО ПРОГРАММИСТА]
+  * [http://simulators.narod.ru/bookbk.htm Алексей Донской. Программирование на БК-0010-01]
+
+== Программы для БК ==
+
+  * http://www.rndcom.msk.ru/bk.php
+  * http://pdp-11.ru/mybk/
+
+== Другие эмуляторы ==
+
+  * [http://bk-terak-emu.sourceforge.net/ Эмулятор Леонида Брухиса]
+  * [https://bitbucket.org/alex_tishin/bk2010/src Эмулятор Александра Тишина (Sandro)]
+  * [http://www.asvcorp.ru/darch/tools/emustudio-bk0010/ Эмулятор ASV для Mac OS X]
+  * [http://bk0010.org/ Эмулятор Сергея Камнева]
+  * [http://mess.redump.net/mess:drivers:bk Драйвер bk в MESS]
+
+== Форумы ==
+
+  * http://bk0010.org/forum/
+  * http://zx.pk.ru/forumdisplay.php?f=59
+  * ФИДО-конференция MO.DEC [http://groups.google.com/group/fido7.mo.dec/topics?lnk]
