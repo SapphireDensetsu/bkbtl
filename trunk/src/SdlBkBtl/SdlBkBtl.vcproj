@@ -201,6 +201,10 @@
 				RelativePath=".\emubase\Processor.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\Settings.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
