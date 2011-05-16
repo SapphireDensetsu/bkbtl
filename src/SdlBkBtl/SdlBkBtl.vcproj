@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="8.00"
 	Name="SdlBkBtl"
 	ProjectGUID="{15715B68-6F56-437D-91A3-998AB0C17BAE}"
 	RootNamespace="SdlBkBtl"
-	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
 		<Platform

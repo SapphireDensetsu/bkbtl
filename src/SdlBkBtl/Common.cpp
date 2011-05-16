@@ -6,6 +6,8 @@
 #  include <io.h>
 #elif defined(_DINGOO)
 #  include <dingoo/fsys.h>
+#elif defined(PSP)
+#  include <dirent.h>
 #else  // POSIX
 #  include <strings.h>
 #  include <dirent.h>

@@ -8,9 +8,11 @@
 // Globals
 
 char            g_AppDirectory[256];
+char            g_AppIniPath[256];
 SDL_Surface*    g_Screen = NULL;
 SDL_Surface*    g_BKScreen = NULL;
 SDL_Surface*    g_Keyboard = NULL;
+SDL_Joystick*   g_Joystick = NULL;
 int             g_BKScreenWid, g_BKScreenHei;
 int             g_ScreenMode = -1;
 int             g_okQuit = FALSE;
@@ -20,29 +22,104 @@ int             g_LastDelay = 0;        //DEBUG: Last delay value, milliseconds
 int             g_LastFps = 0;          //DEBUG: Last Frames-per-Second value
 
 #define FRAME_TICKS             40      // 1000 us / 40 = 25 frames per second
-#define DEFAULT_BK_CONF         BK_CONF_BK0010_FDD
+#define DEFAULT_BK_CONF         BK_CONF_BK0010_BASIC
 
 #define KEYBOARD_LEFT           22
 #define KEYBOARD_TOP            120
 #define KEYBOARD_WIDTH          276
 #define KEYBOARD_HEIGHT         106
 
+void Main_Menu();
+
+
+enum EventType
+{
+    EVKEY = 1,
+    EVJOY = 2,
+    EVCMD = 3,
+};
+
 struct KeyMappingStruct
 {
-    int             source;             // Source key - SDLK_Xxx
-    int             isjoystick;         // 0 - keyboard, 1 - joystick
-    unsigned int    result;             // Resulting key scan or joystick bits
+    int             sourcetype;         // Source: 0 - none, 1 - keyboard, 2 - joystick
+    int             sourcecd;           // Source code: keyboard - SDLK_Xxx, joystick - button number
+    int             resulttype;         // Result: 0 - none, 1 - BK keyboard, 2 - BK joystick, 3 - command
+    unsigned int    resultcd;           // Result code: keyboard - key scan, joystick - bits, command - ID
 };
 
 static KeyMappingStruct g_KeyMapping[] = {
-    { SDLK_LEFT,    1,  0x10 },
-    { SDLK_RIGHT,   1,  0x40 },
-    { SDLK_UP,      1,  0x80 },
-    { SDLK_DOWN,    1,  0x20 },
-    { SDLK_LCTRL,   1,  0x01 },     // A button on Dingoo
-    { SDLK_RETURN,  0,  012 },      // START button on Dingoo
-    { SDLK_SPACE,   0,  040 },      // X button on Dingoo
+#if defined(PSP)
+    { EVJOY, 7,             EVJOY,  0x10 },         // Left
+    { EVJOY, 9,             EVJOY,  0x40 },         // Right
+    { EVJOY, 8,             EVJOY,  0x80 },         // Up
+    { EVJOY, 6,             EVJOY,  0x20 },         // Down
+    { EVJOY, 11,            EVKEY,  012 },          // Start    ->  BK Enter
+    { EVJOY, 4,             EVCMD,  ID_MENU },      // Left Trigger
+    { EVJOY, 5,             EVCMD,  ID_KEYBOARD },  // Right Trigger
+    { EVJOY, 8,             EVCMD,  ID_MENU_UP },   // Up
+    { EVJOY, 6,             EVCMD,  ID_MENU_DOWN }, // Down
+    { EVJOY, 7,             EVCMD,  ID_MENU_LEFT },  // Left
+    { EVJOY, 9,             EVCMD,  ID_MENU_RIGHT }, // Right
+    { EVJOY, 2,             EVCMD,  ID_MENU_SELECT }, // X
+    { EVJOY, 1,             EVCMD,  ID_MENU_ESCAPE }, // O
+#elif defined(_DINGOO)
+    { EVKEY, SDLK_LEFT,     EVJOY,  0x10 },
+    { EVKEY, SDLK_RIGHT,    EVJOY,  0x40 },
+    { EVKEY, SDLK_UP,       EVJOY,  0x80 },
+    { EVKEY, SDLK_DOWN,     EVJOY,  0x20 },
+    { EVKEY, SDLK_LCTRL,    EVJOY,  0x01 },         // A button on Dingoo
+    { EVKEY, SDLK_RETURN,   EVKEY,  012 },          // START button on Dingoo
+    { EVKEY, SDLK_SPACE,    EVKEY,  040 },          // X button on Dingoo
+    { EVKEY, SDLK_PAUSE,    EVCMD,  ID_EXIT },      // POWER UP on Dingoo
+    { EVKEY, SDLK_BACKSPACE, EVCMD, ID_KEYBOARD },  // Right shoulder on Dingoo
+    { EVKEY, SDLK_TAB,      EVCMD,  ID_MENU },      // Left shoulder on Dingoo
+    { EVKEY, SDLK_UP,       EVCMD,  ID_MENU_UP },
+    { EVKEY, SDLK_DOWN,     EVCMD,  ID_MENU_DOWN },
+    { EVKEY, SDLK_LEFT,     EVCMD,  ID_MENU_LEFT },
+    { EVKEY, SDLK_RIGHT,    EVCMD,  ID_MENU_RIGHT },
+    { EVKEY, SDLK_RETURN,   EVCMD,  ID_MENU_SELECT }, // START button on Dingoo
+#else  // Win32
+    { EVKEY, SDLK_LEFT,     EVJOY,  0x10 },
+    { EVKEY, SDLK_RIGHT,    EVJOY,  0x40 },
+    { EVKEY, SDLK_UP,       EVJOY,  0x80 },
+    { EVKEY, SDLK_DOWN,     EVJOY,  0x20 },
+    { EVKEY, SDLK_RETURN,   EVKEY,  012 },
+    { EVKEY, SDLK_SPACE,    EVKEY,  040 },
+    { EVKEY, SDLK_F10,      EVCMD,  ID_EXIT },
+    { EVKEY, SDLK_ESCAPE,   EVCMD,  ID_MENU_ESCAPE },
+    { EVKEY, SDLK_TAB,      EVCMD,  ID_MENU },
+    { EVKEY, SDLK_UP,       EVCMD,  ID_MENU_UP },
+    { EVKEY, SDLK_DOWN,     EVCMD,  ID_MENU_DOWN },
+    { EVKEY, SDLK_LEFT,     EVCMD,  ID_MENU_LEFT },
+    { EVKEY, SDLK_RIGHT,    EVCMD,  ID_MENU_RIGHT },
+    { EVKEY, SDLK_RETURN,   EVCMD,  ID_MENU_SELECT },
+    { EVKEY, SDLK_BACKSPACE, EVCMD, ID_KEYBOARD },
+#endif
 };
+
+// Search for suitable mapping.
+//  sourcetype: 1 - keyboard, 2 - joystick
+//  ismenu: 0 - search for keyboard/joystick result; 1 - search for menu result
+KeyMappingStruct* FindKeyMapping(int sourcetype, int sourcecd, int ismenu)
+{
+    for (int i = 0; i < sizeof(g_KeyMapping) / sizeof(KeyMappingStruct); i++)
+    {
+        if (g_KeyMapping[i].sourcetype == sourcetype &&
+            g_KeyMapping[i].sourcecd == sourcecd)
+        {
+            if (!ismenu &&
+                (g_KeyMapping[i].resulttype == EVKEY || g_KeyMapping[i].resulttype == EVJOY))
+                return g_KeyMapping + i;
+            if (ismenu && g_KeyMapping[i].resulttype == EVCMD)
+                return g_KeyMapping + i;
+        }
+    }
+
+    return NULL;  // Mapping not found
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 
 // Keyboard key mapping to bitmap
 struct VirtKeyboardKey
@@ -50,8 +127,8 @@ struct VirtKeyboardKey
     int             x, y;
     int             w, h;
     unsigned int    code;
-    char *          label;
-    char *          labelru;
+    const char *    label;
+    const char *    labelru;
 }
 static m_arrKeyboardKeys[] = {
 /*   x1, y1   w, h     code             labelen         labelru  */
@@ -186,7 +263,7 @@ void Main_DrawKeyboard()
     int y = m_arrKeyboardKeys[g_KeyboardCurrent].y / 2 + KEYBOARD_TOP;
     int w = m_arrKeyboardKeys[g_KeyboardCurrent].w / 2;
     int h = m_arrKeyboardKeys[g_KeyboardCurrent].h / 2;
-    Uint32 color = SDL_MapRGB(g_Keyboard->format, 255,192,192);
+    Uint32 color = SDL_MapRGB(g_Keyboard->format, 224,128,128);
     SDL_Rect rc;
     rc.x = x;  rc.y = y - 1;  rc.w = w;  rc.h = 2;
     SDL_FillRect(g_Screen, &rc, color);
@@ -236,15 +313,16 @@ int Main_KeyboardFindNearestKey(int direction)
     int x, y;
     switch (direction)
     {
-    case SDLK_LEFT:   x = left - 36/4;         y = (top + bottom) / 2;  break;
-    case SDLK_RIGHT:  x = right + 36/4;        y = (top + bottom) / 2;  break;
-    case SDLK_UP:     x = (left + right) / 2;  y = top - 34/4;          break;
-    case SDLK_DOWN:   x = (left + right) / 2;  y = bottom + 34/4;       break;
+    case ID_MENU_LEFT:   x = left - 36/4;         y = (top + bottom) / 2;  break;
+    case ID_MENU_RIGHT:  x = right + 36/4;        y = (top + bottom) / 2;  break;
+    case ID_MENU_UP:     x = (left + right) / 2;  y = top - 34/4;          break;
+    case ID_MENU_DOWN:   x = (left + right) / 2;  y = bottom + 34/4;       break;
     default: return g_KeyboardCurrent;
     }
 
     return Main_KeyboardFindNearestKeyXY(x, y);
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -454,6 +532,12 @@ void Main_ExecuteCommand(int command)
 {
     switch (command)
     {
+    case ID_EXIT:
+        g_okQuit = TRUE;
+        break;
+    case ID_MENU:
+        Main_Menu();
+        break;
     case ID_VIDEO_MODE_NEXT:
         Main_SetScreenMode((g_ScreenMode + 1 == EMULATOR_SCREENMODE_COUNT) ? 0 : g_ScreenMode + 1);
         break;
@@ -495,10 +579,11 @@ struct MenuItemStruct
 }
 static m_MainMenuItems[] =
 {
-    { "Video Mode <>",  ID_VIDEO_MODE },
-    { "Keyboard",       ID_KEYBOARD },
-    { "Load BIN    >",  ID_LOAD_BIN },
-    { "Reset",          ID_RESET },
+    { "Video Mode    <>",  ID_VIDEO_MODE },
+    { "Keyboard",          ID_KEYBOARD },
+    { "Load BIN       >",  ID_LOAD_BIN },
+    { "Reset",             ID_RESET },
+    //{ "Configuration <>",  ID_CONFIGURATION },
 };
 
 void Main_Menu()
@@ -508,10 +593,11 @@ void Main_Menu()
     int redrawScreen = TRUE;
     const int menuItemCount = sizeof(m_MainMenuItems) / sizeof(MenuItemStruct);
     const int menuLeft = 12;
-    const int menuWidth = 8 * 14;
+    const int menuWidth = 8 * 16;
     char progname[50];
+    char buffer[32];
 
-    sprintf(progname, " BKBTL SDL version %d.%d  " __DATE__ " ", VERSION_MAJOR, VERSION_MINOR);
+    sprintf(progname, "BKBTL SDL version %d.%d  " __DATE__ " ", VERSION_MAJOR, VERSION_MINOR);
 
     while (!exitMenu)
     {
@@ -522,11 +608,11 @@ void Main_Menu()
             // Draw menu background 
             SDL_Rect rc;
             rc.x = menuLeft - 8; rc.y = 8 - 4;
-            rc.w = 12 + menuWidth; rc.h = 8 + 12 * menuItemCount;
+            rc.w = 16 + menuWidth; rc.h = 8 + 12 * menuItemCount;
             SDL_FillRect(g_Screen, &rc, SDL_MapRGB(g_Screen->format, 32, 32, 192));
             // Draw selected item background
             rc.x = menuLeft - 4; rc.y = 8 - 1 + currentItem * 12;
-            rc.w = 4 + menuWidth; rc.h = 11 + 2;
+            rc.w = 8 + menuWidth; rc.h = 11 + 2;
             SDL_FillRect(g_Screen, &rc, SDL_MapRGB(g_Screen->format, 192, 32, 32));
 
             // Draw menu items
@@ -538,6 +624,9 @@ void Main_Menu()
 
             // Emulator name and version number
             Font_DrawText(menuLeft, SCREEN_HEIGHT - 12, progname);
+            // Last FPS
+            sprintf(buffer, "FPS: %d, Delay: %d", g_LastFps, g_LastDelay);
+            Font_DrawText(menuLeft, SCREEN_HEIGHT - 24, buffer);
 
             SDL_Flip(g_Screen);
 
@@ -553,38 +642,38 @@ void Main_Menu()
                 g_okQuit = exitMenu = TRUE;
                 break;
             }
-            if (evt.type == SDL_KEYDOWN)
+            if (evt.type == SDL_KEYDOWN || evt.type == SDL_JOYBUTTONDOWN)
             {
-                switch (evt.key.keysym.sym)
+                KeyMappingStruct* mapping = FindKeyMapping(1, evt.key.keysym.sym, TRUE);
+                if (mapping != NULL)
                 {
-                case SDLK_PAUSE:  // POWER UP button on Dingoo
-                    g_okQuit = exitMenu = TRUE;
-                    break;
-                case SDLK_TAB:  // Left shoulder on Dingoo
-                case SDLK_ESCAPE:  // SELECT button on Dingoo
-                    exitMenu = TRUE;
-                    break;
-                case SDLK_UP:
-                    if (currentItem > 0) currentItem--; else currentItem = menuItemCount - 1;
-                    break;
-                case SDLK_DOWN:
-                    if (currentItem < menuItemCount - 1) currentItem++; else currentItem = 0;
-                    break;
-                case SDLK_RIGHT:
-                case SDLK_LCTRL:  // A button on Dingoo
-                case SDLK_SPACE:  // X button on Dingoo
-                    if (Main_ExecuteMenuCommand(m_MainMenuItems[currentItem].command, TRUE))
+                    switch (mapping->resultcd)
+                    {
+                    case ID_EXIT:
+                        g_okQuit = exitMenu = TRUE;
+                        break;
+                    case ID_MENU:
+                    case ID_MENU_ESCAPE:
                         exitMenu = TRUE;
-                    break;
-                case SDLK_LEFT:
-                case SDLK_LALT:  // B button on Dingoo
-                case SDLK_LSHIFT:  // Y button on Dingoo
-                case SDLK_RETURN:  // START button on Dingoo
-                    if (Main_ExecuteMenuCommand(m_MainMenuItems[currentItem].command, FALSE))
-                        exitMenu = TRUE;
-                    break;
-                default:
-                    break;
+                        break;
+                    case ID_MENU_UP:
+                        if (currentItem > 0) currentItem--; else currentItem = menuItemCount - 1;
+                        break;
+                    case ID_MENU_DOWN:
+                        if (currentItem < menuItemCount - 1) currentItem++; else currentItem = 0;
+                        break;
+                    case ID_MENU_RIGHT:
+                    case ID_MENU_SELECT:
+                        if (Main_ExecuteMenuCommand(m_MainMenuItems[currentItem].command, TRUE))
+                            exitMenu = TRUE;
+                        break;
+                    case ID_MENU_LEFT:
+                        if (Main_ExecuteMenuCommand(m_MainMenuItems[currentItem].command, FALSE))
+                            exitMenu = TRUE;
+                        break;
+                    default:
+                        break;
+                    }
                 }
             }
         }
@@ -593,92 +682,82 @@ void Main_Menu()
     }
 }
 
-void Main_OnKeyEvent(SDL_Event evt)
+// Handles SDL keyboard press/release and joystick button press/release events.
+void Main_OnKeyJoyEvent(SDL_Event evt)
 {
-    if (evt.type == SDL_KEYDOWN &&
-        (evt.key.keysym.sym == SDLK_PAUSE || evt.key.keysym.sym == SDLK_ESCAPE))  // POWER UP and SELECt on Dingoo
-    {
-        g_okQuit = TRUE;
-        return;
-    }
+    KeyMappingStruct* mapping;
+    int pressed = (evt.type == SDL_KEYDOWN || evt.type == SDL_JOYBUTTONDOWN);
+    int sourcetype = (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP) ? EVKEY : EVJOY;
 
     if (g_okKeyboard)  // Onscreen keyboard mode
     {
-        if (evt.type == SDL_KEYDOWN)
+        mapping = FindKeyMapping(sourcetype, evt.key.keysym.sym, TRUE);
+        if (mapping == NULL)
+            return;
+        int command = mapping->resultcd;
+        if (pressed)
         {
-            switch (evt.key.keysym.sym)
+            switch (command)
             {
-                case SDLK_BACKSPACE:  // Right shoulder on Dingoo
-                    Main_ExecuteCommand(ID_KEYBOARD);
-                    return;
-                case SDLK_UP:
-                case SDLK_DOWN:
-                case SDLK_LEFT:
-                case SDLK_RIGHT:
-                    g_KeyboardCurrent = Main_KeyboardFindNearestKey(evt.key.keysym.sym);
-                    return;
-                case SDLK_LCTRL:
-                case SDLK_SPACE:
-                    Emulator_KeyboardEvent(m_arrKeyboardKeys[g_KeyboardCurrent].code, TRUE);
-                    break;
-                default:
-                    break;
+            case ID_MENU_ESCAPE:
+            case ID_MENU:
+            case ID_KEYBOARD:
+                Main_ExecuteCommand(ID_KEYBOARD);
+                return;
+            case ID_MENU_UP:
+            case ID_MENU_DOWN:
+            case ID_MENU_LEFT:
+            case ID_MENU_RIGHT:
+                g_KeyboardCurrent = Main_KeyboardFindNearestKey(command);
+                return;
+            case ID_MENU_SELECT:
+                Emulator_KeyboardEvent(m_arrKeyboardKeys[g_KeyboardCurrent].code, TRUE);
+                break;
+            default:
+                break;
             }
         }
-        else if (evt.type == SDL_KEYUP)
+        else
         {
-            switch (evt.key.keysym.sym)
+            if (command == ID_MENU_SELECT)
             {
-                case SDLK_LCTRL:
-                case SDLK_SPACE:
-                    Emulator_KeyboardEvent(m_arrKeyboardKeys[g_KeyboardCurrent].code, FALSE);
-                    break;
-                default:
-                    break;
+                Emulator_KeyboardEvent(m_arrKeyboardKeys[g_KeyboardCurrent].code, FALSE);
             }
         }
         return;
     }
 
-    if (evt.type == SDL_KEYDOWN)
+    mapping = FindKeyMapping(sourcetype, evt.key.keysym.sym, FALSE);
+    if (mapping != NULL)  // BK event mapping found
     {
-        switch (evt.key.keysym.sym)
-        {
-        case SDLK_TAB:  // Left shoulder on Dingoo
-            Main_Menu();
-            return;
-        case SDLK_BACKSPACE:  // Right shoulder on Dingoo
-            Main_ExecuteCommand(ID_KEYBOARD);
-            return;
-        default:
-            break;
-        }
+        BYTE result = mapping->resultcd;
+        if (mapping->resulttype == EVJOY)
+            Emulator_JoystickEvent(result, pressed);
+        else
+            Emulator_KeyboardEvent(result, pressed);
     }
-
-    for (int i = 0; i < sizeof(g_KeyMapping) / sizeof(KeyMappingStruct); i++)
+    else if (pressed)  // Commands works only on key/button press, not release
     {
-        if (g_KeyMapping[i].source == evt.key.keysym.sym)
+        mapping = FindKeyMapping(sourcetype, evt.key.keysym.sym, TRUE);
+        if (mapping != NULL)  // Command mapping found
         {
-            int okPressed = (evt.type == SDL_KEYDOWN);
-            BYTE result = g_KeyMapping[i].result;
-            if (g_KeyMapping[i].isjoystick)
-                Emulator_JoystickEvent(result, okPressed);
-            else
-                Emulator_KeyboardEvent(result, okPressed);
-            return;
+            Main_ExecuteCommand(mapping->resultcd);
         }
     }
 }
 
 /////////////////////////////////////////////////////////////////////////////
 
-#ifdef _WIN32
-#undef main  //HACK for VC error LNK1561: entry point must be defined
+#if defined(_WIN32)
+#  undef main  //HACK for VC error LNK1561: entry point must be defined
+#elif defined(PSP)
+   extern "C" int SDL_main (int argc, char* args[]);
 #endif
 
 int main(int argc, char** argv)
 {
     const char *inPath = argv[0];
+    // Get application directory
 	int i, j;
 	for (i = 0, j = 0; inPath[i] != '\0'; i++) {
 		if ((inPath[i] == '\\') || (inPath[i] == '/'))
@@ -686,13 +765,21 @@ int main(int argc, char** argv)
 	}
 	strncpy(g_AppDirectory, inPath, j);
 	g_AppDirectory[j] = '\0';
+    
+    // Get application INI file path
+    const char *inPathDot = strrchr(inPath, '.');
+    int c = (inPathDot == NULL) ? strlen(inPath) : inPathDot - inPath;
+    strncpy(g_AppIniPath, inPath, c);
+    strncpy(g_AppIniPath + c, ".ini", 4);
 
-#ifndef _WIN32
+#if defined(_DINGOO)
     SDL_putenv("DINGOO_IGNORE_OS_EVENTS=1");  //HACK to fix "push long time on X" problem
 #endif
 
+    Settings_ParseIniFile(g_AppIniPath);
+
     // Init SDL video
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0)
         return 255;  // Unable to initialize SDL
 
 #ifdef _WIN32
@@ -709,6 +796,10 @@ int main(int argc, char** argv)
     g_Keyboard = SDL_CreateRGBSurface(0, KEYBOARD_WIDTH, KEYBOARD_HEIGHT, 32, 0,0,0,0);
     SDL_SetAlpha(g_Keyboard, SDL_SRCALPHA, 180);
     SDL_SetColorKey(g_Keyboard, SDL_SRCCOLORKEY, SDL_MapRGB(g_Keyboard->format, 0,0,0));
+
+    SDL_Delay(1000);
+    if (SDL_NumJoysticks())
+        g_Joystick = SDL_JoystickOpen(0);
 
     Fonts_Initialize();
 
@@ -738,9 +829,10 @@ int main(int argc, char** argv)
             }
             else
             {
-                if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP)
+                if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP ||
+                    evt.type == SDL_JOYBUTTONDOWN || evt.type == SDL_JOYBUTTONUP)
                 {
-                    Main_OnKeyEvent(evt);
+                    Main_OnKeyJoyEvent(evt);
                 }
             }
         }
@@ -777,6 +869,11 @@ int main(int argc, char** argv)
     Emulator_Done();
 
     Main_SetScreenMode(-1);
+
+    if (g_Joystick != NULL)
+    {
+        SDL_JoystickClose(g_Joystick);
+    }
 
     // Free memory
     SDL_FreeSurface(g_Keyboard);

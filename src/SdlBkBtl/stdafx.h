@@ -12,6 +12,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <malloc.h>
-#include <memory.h>
+#ifdef PSP
+#  include <stdlib.h>
+#else
+#  include <memory.h>
+#endif
 
 #include "Common.h"
