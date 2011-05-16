@@ -697,9 +697,10 @@ int CMotherboard::TranslateAddress(WORD address, BOOL okHaltMode, BOOL okExec, W
             else  // 160000-177777 -- FDD ROM
             {
                 if ((m_Configuration & BK_COPT_FDD) == 0)
-                    addrType = ADDRTYPE_DENY;
+                    //addrType = ADDRTYPE_DENY;
+                    address = (address & 017777) + 0120000;  // BK-0011V MSTD
                 else
-                    address = (address & 017777) + 0120000;
+                    address = (address & 017777) + 0120000;  // FDD ROM
             }
             break;
         }
@@ -730,10 +731,10 @@ WORD CMotherboard::GetPortWord(WORD address)
     case 0177566:  // Serial port interrupt vector
         return 060;
 
-	case 0177700:  // Регистр режима (РР) ВМ1
-		return 0177740;
-	case 0177702:  // Регистр адреса прерывания (РАП) ВМ1
-		return 0177777;
+    case 0177700:  // Регистр режима (РР) ВМ1
+        return 0177740;
+    case 0177702:  // Регистр адреса прерывания (РАП) ВМ1
+        return 0177777;
     case 0177704:  // Регистр ошибки (РОШ) ВМ1
         return 0177440;
 

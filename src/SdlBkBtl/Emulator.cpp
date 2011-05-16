@@ -381,7 +381,7 @@ int Emulator_SystemFrame()
     Emulator_ProcessKeyEvent();
     g_pBoard->SetPrinterInPort(m_EmulatorJoystickState);
     
-	if (!g_pBoard->SystemFrame())
+    if (!g_pBoard->SystemFrame())
         return FALSE;
 
     //// Calculate frames per second

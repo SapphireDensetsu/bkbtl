@@ -758,13 +758,13 @@ int main(int argc, char** argv)
 {
     const char *inPath = argv[0];
     // Get application directory
-	int i, j;
-	for (i = 0, j = 0; inPath[i] != '\0'; i++) {
-		if ((inPath[i] == '\\') || (inPath[i] == '/'))
-			j = i + 1;
-	}
-	strncpy(g_AppDirectory, inPath, j);
-	g_AppDirectory[j] = '\0';
+    int i, j;
+    for (i = 0, j = 0; inPath[i] != '\0'; i++) {
+        if ((inPath[i] == '\\') || (inPath[i] == '/'))
+            j = i + 1;
+    }
+    strncpy(g_AppDirectory, inPath, j);
+    g_AppDirectory[j] = '\0';
     
     // Get application INI file path
     const char *inPathDot = strrchr(inPath, '.');
