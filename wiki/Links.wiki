@@ -22,11 +22,11 @@
 
 == Другие эмуляторы ==
 
-  * [http://bk-terak-emu.sourceforge.net/ Эмулятор Леонида Брухиса]
-  * [https://bitbucket.org/alex_tishin/bk2010/src Эмулятор Александра Тишина (Sandro)]
+  * [http://bk-terak-emu.sourceforge.net/ Эмулятор Леонида Брухиса] -- C
+  * [https://bitbucket.org/alex_tishin/bk2010/src Эмулятор Александра Тишина (Sandro)] -- Java
   * [http://www.asvcorp.ru/darch/tools/emustudio-bk0010/ Эмулятор ASV для Mac OS X]
-  * [http://bk0010.org/ Эмулятор Сергея Камнева]
-  * [http://mess.redump.net/mess:drivers:bk Драйвер bk в MESS]
+  * [http://bk0010.org/ Эмулятор Сергея Камнева] -- Asm
+  * [http://mess.redump.net/mess:drivers:bk Драйвер bk в MESS] -- C
 
 == Форумы ==
 
