@@ -19,7 +19,10 @@
 
 void AlertWarning(LPCTSTR sMessage)
 {
-    //TODO: Print message to console
+#if defined(_WIN32)
+    _tprintf(_T("! %s\n"), sMessage);
+//TODO: Implement for other platforms
+#endif
 }
 
 #if !defined(PRODUCT)
